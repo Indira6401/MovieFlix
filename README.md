@@ -1,56 +1,66 @@
 # MovieFlix
 
-MovieFlix is a React 19 movie discovery app built with Vite. It fetches movie data from TMDB, lets users search with a debounced input, and stores search popularity in Firebase Firestore to render a small trending section.
+MovieFlix is a React 19 movie discovery app built with Vite. It fetches movie data from TMDB, lets users search with a debounced input, and stores search popularity in Firebase Firestore to render a trending section.
 
 ## Tech Stack
 
 - React 19
 - Vite 8
 - Tailwind CSS 4
-- Firebase
-- Cloud Firestore
+- Firebase Firestore
+- Firebase Hosting
 - TMDB API
 
-## What The App Does
 ## Features
 
-- Browse popular movies
+- Browse popular movies on load
 - Search movies with debounced input
 - Track successful searches in Firestore
-- Show top trending searches
+- Show top 5 trending searches from Firestore
 
 ## Architecture
 
-- `src/App.jsx`: main container for state, effects, TMDB fetches, and page rendering
-- `src/firebase.js`: Firebase setup plus Firestore read/write logic for trending searches
-- `src/hooks/useDebounce.js`: delays search updates before requests fire
-- `src/components/`: UI components for search, loading, and movie cards
-
-Current flow:
-```text
-Search input -> debounced value -> TMDB fetch -> movie list render
-                                   -> Firestore search count update
-
-App load -> TMDB popular movies
-         -> Firestore trending searches
 ```
+src/
+├── App.jsx                    ← state, effects, rendering
+├── firebase.js                ← Firestore read/write
+├── hooks/
+│   └── useDebounce.js         ← delays search before fetch fires
+└── components/
+    ├── Services.jsx            ← pure data-fetching (TMDB + Firestore)
+    ├── Search.jsx              ← search input UI
+    ├── MovieCard.jsx           ← single movie card UI
+    └── Spinner.jsx             ← loading indicator
+```
+
 ### Layers
 
-1. Presentation layer
-   - `src/components/search.jsx`
-   - `src/components/MovieCard.jsx`
-   - `src/components/spinner.jsx`
+1. **Presentation** — `Search.jsx`, `MovieCard.jsx`, `Spinner.jsx`
+   Renders UI only, no logic or state.
 
-2. Page/container layer
-   - `src/App.jsx`
-   - Owns state, effects, API calls, loading states, and rendering decisions
+2. **Container** — `App.jsx`
+   Owns all state and effects. Calls services, handles loading/error states, decides what to render.
 
-3. Reusable hook layer
-   - `src/hooks/useDebounce.js`
-   - Delays search updates before network requests are triggered
+3. **Service** — `components/Services.jsx`
+   Pure data-fetching layer. No React state. Returns data or throws. `App.jsx` decides what to do with the result.
 
-4. Data/service layer
-   - `src/firebase.js`
-   - Reads and writes trending-search data in Firestore
-   - `fetch(...)` calls inside `src/App.jsx`
-   - Reads movie data from TMDB
+4. **Data** — `firebase.js`
+   Firebase setup and Firestore operations (read trending, write search count).
+
+5. **Hook** — `hooks/useDebounce.js`
+   Delays updating the search value so TMDB is not called on every keystroke.
+
+
+## Run Locally
+
+```bash
+npm install
+npm run dev
+```
+
+## Deploy
+
+```bash
+npm run build
+firebase deploy --only hosting
+```

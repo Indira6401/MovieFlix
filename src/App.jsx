@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 import useDebounce from './hooks/useDebounce';
-import Search from "./components/search";
-import Spinner from "./components/spinner";
-import MovieCard from "./components/moviecard";
-import { updateSearchTermCount, getTrendingMovies } from "./firebase";
 
-const API_BASE_URL = "https://api.themoviedb.org/3";
+import Search from "./components/Search";
+import Spinner from "./components/Spinner";
+import MovieCard from "./components/MovieCard";
 
-const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+import { fetchMovies, fetchTrendingMovies } from "./components/Services";
+
 
 const App = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -26,54 +25,27 @@ const App = () => {
   useDebounce(() => setDebouncedSearchTerm(searchTerm), 500, [searchTerm])
 
   useEffect(() => {
-    const fetchMovies = async (query) => {
+    const loadMovies = async () => {
       setErrorMessage("");
       setIsLoading(true);
       try {
-        const endPoint = query ?
-          `${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}` :
-          `${API_BASE_URL}/discover/movie?sort_by=popularity.desc`;
-        const response = await fetch(endPoint, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            accept: "application/json",
-            Authorization: `Bearer ${API_KEY}`,
-          },
-        });
-
-        if (!response.ok) {
-          setErrorMessage("Failed to fetch movies. Please try again later.");
-          return;
-        }
-        const data = await response.json();
-
-        if (!data.results || data.results.length === 0 || data.results === false) {
-          setErrorMessage("No movies found.");
-          return;
-        }
-
-        setMovieList(data.results);
-        if (query && data.results.length > 0) {
-          updateSearchTermCount(query, data.results[0]);
-        }
+        const movies = await fetchMovies(debouncedSearchTerm);
+        setMovieList(movies);
       } catch (error) {
-        console.error(`Error fetching movies: ${error}`);
-        setErrorMessage("Failed to fetch movies. Please try again later.");
+        setErrorMessage(error.message);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchMovies(debouncedSearchTerm);
+    loadMovies();
   }, [debouncedSearchTerm]);
 
   useEffect(() => {
-    const fetchTrendingMovies = async () => {
+    const loadTrendingMovies = async () => {
       setTrendingMoviesLoading(true);
       try {
-        const movies = await getTrendingMovies();
+        const movies = await fetchTrendingMovies();
         setTrendingMovies(movies);
-        console.log("Trending movies fetched successfully:", movies);
       } catch (error) {
         console.error("Error fetching trending movies:", error);
         setTrendingMovieListError("Failed to fetch trending movies. Please try again later.");
@@ -81,7 +53,7 @@ const App = () => {
         setTrendingMoviesLoading(false);
       }
     };
-    fetchTrendingMovies();
+    loadTrendingMovies();
   }, []);
 
   const renderMovieContent = () => {

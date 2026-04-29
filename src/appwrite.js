@@ -1,3 +1,4 @@
+//Previously implemented using appwrite and swithed to firebase, keeping the code for reference and future use if needed
 import {Client, Databases, Query, ID} from "appwrite";
 
 const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
